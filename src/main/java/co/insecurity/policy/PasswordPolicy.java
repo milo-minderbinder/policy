@@ -4,9 +4,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import co.insecurity.policy.directive.CharTypesDirective;
+import co.insecurity.policy.directive.Directive;
+import co.insecurity.policy.directive.LengthDirective;
+
 public class PasswordPolicy implements Policy<String, Directive<String>> {
 
-	private List<Directive<String>> directives;
+	private final List<Directive<String>> directives;
 	
 	public PasswordPolicy() {
 		directives = new ArrayList<Directive<String>>();
@@ -18,14 +22,14 @@ public class PasswordPolicy implements Policy<String, Directive<String>> {
 	}
 
 	@Override
-	public void addDirective(Directive<String> directive) {
+	public void addDirective(final Directive<String> directive) {
 		directives.add(directive);
 	}
 
 	public static void main(String[] args) {
 		PasswordPolicy pwPolicy = new PasswordPolicy();
 		pwPolicy.addDirective(new LengthDirective());
-		pwPolicy.addDirective(new ComplexityDirective());
+		pwPolicy.addDirective(new CharTypesDirective());
 		System.out.println(pwPolicy.isCompliant("admin"));
 		System.out.println(pwPolicy.isCompliant("passwords"));
 		System.out.println(pwPolicy.isCompliant("passwords1"));

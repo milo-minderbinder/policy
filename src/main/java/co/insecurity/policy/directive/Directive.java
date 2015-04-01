@@ -1,4 +1,4 @@
-package co.insecurity.policy;
+package co.insecurity.policy.directive;
 
 public interface Directive<T> {
 
