@@ -1,4 +1,10 @@
+*.log
+*.swp
+*.jks
+.gradle/
+build/
 .classpath
 .project
 .settings/
-bin/
+/bin/
+/password-files/
