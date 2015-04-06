@@ -6,11 +6,11 @@ import java.util.stream.Collectors;
 
 import co.insecurity.policy.directive.Directive;
 
-public interface Policy<T, D extends Directive<T>> {
+public interface Policy<T> {
 
-	void addDirective(D directive);
+	void addDirective(Directive<T> directive);
 
-	Collection<D> getDirectives();
+	Collection<Directive<T>> getDirectives();
 
 	default boolean isCompliant(final T e) {
 		return getDirectives()
@@ -18,10 +18,12 @@ public interface Policy<T, D extends Directive<T>> {
 			.allMatch(d -> d.isMet(e));
 	}	
 	
-	default Collection<D> getViolations(final T e) {
+	default Collection<Directive<T>> getViolations(final T e) {
 		return getDirectives()
 				.stream()
 				.filter(d -> !d.isMet(e))
-				.collect(Collectors.toCollection(ArrayList<D>::new));
+				.collect(Collectors.toCollection(
+						ArrayList<Directive<T>>::new)
+				);
 	}
 }

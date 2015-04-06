@@ -12,8 +12,9 @@ public class CharTypesDirective implements Directive<String> {
 		requiredCharTypes = new HashSet<Integer>();
 	}
 	
-	public void addRequiredType(byte charType) {
+	public CharTypesDirective addRequiredType(byte charType) {
 		requiredCharTypes.add(Integer.valueOf(charType));
+		return this;
 	}
 	
 	@Override
