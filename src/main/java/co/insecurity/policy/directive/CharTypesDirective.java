@@ -17,6 +17,12 @@ public class CharTypesDirective implements Directive<String> {
 		return this;
 	}
 	
+	public CharTypesDirective addRequiredTypes(byte... charTypes) {
+		for (byte charType : charTypes)
+			requiredCharTypes.add(Integer.valueOf(charType));
+		return this;
+	}
+	
 	@Override
 	public boolean isMet(String e) {
 		return e

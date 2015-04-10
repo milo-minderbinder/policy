@@ -22,11 +22,10 @@ public class PasswordPolicyTest {
 	public static void setUpClass() {
 		policy = new PasswordPolicy();
 		policy.addDirective(new LengthDirective(8, 12));
-		 ;
-		policy.addDirective(new CharTypesDirective()
-				.addRequiredType(Character.LOWERCASE_LETTER)
-				.addRequiredType(Character.UPPERCASE_LETTER)
-				.addRequiredType(Character.DECIMAL_DIGIT_NUMBER));
+		policy.addDirective(new CharTypesDirective().addRequiredTypes(
+				Character.LOWERCASE_LETTER,
+				Character.UPPERCASE_LETTER,
+				Character.DECIMAL_DIGIT_NUMBER));
 	}
 	
 	@AfterClass
