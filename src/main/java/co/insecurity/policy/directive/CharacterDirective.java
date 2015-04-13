@@ -43,19 +43,22 @@ public class CharacterDirective implements Directive<String> {
 	public boolean isMet(String s) {
 		LOG.debug("Checking if '{}' meets directive: {}", s, this.toString());
 
-		boolean a = allowed.isEmpty() ? true : s.codePoints().allMatch(i -> {
-			return allowed.stream().anyMatch(d -> d.isMet(i));
-		});
+		boolean a = allowed.isEmpty() ? true : s.codePoints().allMatch(
+				i -> {
+					return allowed.stream().anyMatch(d -> d.isMet(i)); 
+					});
 		LOG.debug("allowed: {}", a);
 		
-		boolean n = restricted.isEmpty() ? true : s.codePoints().noneMatch(i -> {
-			return restricted.stream().anyMatch(d -> d.isMet(i));
-		});
+		boolean n = restricted.isEmpty() ? true : s.codePoints().noneMatch(
+				i -> {
+					return restricted.stream().anyMatch(d -> d.isMet(i));
+					});
 		LOG.debug("restricted: {}", n);
 		
-		boolean r = required.isEmpty() ? true : required.stream().allMatch(d -> {
-			return s.codePoints().anyMatch(i -> d.isMet(i));
-		});
+		boolean r = required.isEmpty() ? true : required.stream().allMatch(
+				d -> {
+					return s.codePoints().anyMatch(i -> d.isMet(i)); 
+					});
 		LOG.debug("required: {}", r);
 		
 		return (a && n && r);
