@@ -59,10 +59,6 @@ public class CharacterDirectiveTest {
 	public void thatRequireWorks() {
 		LOG.info("BEGIN TEST: {}", "thatRequireWorks");
 		String password = null;
-		CharTypeDirective required = new CharTypeDirective().matchCharTypes(
-				Character.LOWERCASE_LETTER, 
-				Character.UPPERCASE_LETTER,
-				Character.DECIMAL_DIGIT_NUMBER);
 		directive.require(new CharTypeDirective().matchCharTypes(Character.LOWERCASE_LETTER));
 		directive.require(new CharTypeDirective().matchCharTypes(Character.UPPERCASE_LETTER));
 		directive.require(new CharTypeDirective().matchCharTypes(Character.DECIMAL_DIGIT_NUMBER));
