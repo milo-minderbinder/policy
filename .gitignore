@@ -1,3 +1,7 @@
+.idea/
+*.iml
+*.ipr
+*.iws
 *.log
 *.swp
 *.jks
@@ -7,4 +11,5 @@ build/
 .project
 .settings/
 /bin/
+out/
 /password-files/
