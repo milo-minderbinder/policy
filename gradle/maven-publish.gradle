@@ -1,0 +1,232 @@
+public class RepositoryURI {
+    private final URI repoURI;
+    private final URI htmlURI;
+    private final String namespace;
+
+    public RepositoryURI(final String rawRepoURI) throws URISyntaxException {
+        if (rawRepoURI == null) {
+            throw new IllegalArgumentException("rawRepoURI can not be null");
+        }
+        this.repoURI = parseRawURI(rawRepoURI);
+        this.htmlURI = new URI(
+                "https",
+                null,
+                repoURI.getHost(),
+                (repoURI.getScheme().equals("https") && repoURI.getPort() != 443) ? repoURI.getPort() : -1,
+                repoURI.getPath().replaceFirst('\\.git$', ""),
+                null,
+                null
+        );
+        this.namespace = this.htmlURI.getPath().substring(1).replaceFirst('/.*$', "");
+    }
+
+    private static URI parseRawURI(String rawRepoURI) throws URISyntaxException {
+        URI repoURI;
+        try {
+            repoURI = new URI(rawRepoURI).normalize();
+        } catch (URISyntaxException e) {
+            // assuming parsing failed because it's an scp-style git URI (e.g. git@example.com:path/to/repo.git)
+            // so we will add the "git" scheme part and replace the ":" before the path with a "/"
+            final int pathStart = rawRepoURI.indexOf(":", rawRepoURI.indexOf('@') + 1) + 1;
+            rawRepoURI = "git://" + rawRepoURI.substring(0, pathStart - 1) + '/' + rawRepoURI.substring(pathStart);
+            repoURI = new URI(rawRepoURI).normalize();
+        }
+        if (!repoURI.isAbsolute() || repoURI.getHost() == null || repoURI.getHost().isEmpty()) {
+            throw new IllegalArgumentException("repo URI missing scheme and/or host: " + repoURI);
+        }
+        if (!repoURI.getPath().startsWith("/")) {
+            throw new IllegalArgumentException("repo URI path must be absolute: " + repoURI);
+        }
+        if (!repoURI.getPath().endsWith(".git") || repoURI.getQuery() != null || repoURI.getFragment() != null) {
+            repoURI = new URI(
+                    repoURI.getScheme(),
+                    repoURI.getUserInfo(),
+                    repoURI.getHost(),
+                    repoURI.getPort(),
+                    repoURI.getPath().endsWith(".git") ? repoURI.getPath() : repoURI.getPath() + ".git",
+                    null,
+                    null
+            );
+        }
+        return getWithoutStandardPortForScheme(repoURI);
+    }
+
+    private static URI getWithoutStandardPortForScheme(final URI repoURI) throws URISyntaxException {
+        boolean unsetPort = false;
+        switch (repoURI.getPort()) {
+            case -1:
+                break;
+            case 80:
+                unsetPort = repoURI.getScheme().equals("http");
+                break;
+            case 443:
+                unsetPort = repoURI.getScheme().equals("https");
+                break;
+            case 22:
+                unsetPort = repoURI.getScheme().equals("git") || repoURI.getScheme().equals("ssh");
+                break;
+        }
+        if (unsetPort) {
+            return new URI(
+                    repoURI.getScheme(),
+                    repoURI.getUserInfo(),
+                    repoURI.getHost(),
+                    -1,
+                    repoURI.getPath(),
+                    repoURI.getQuery(),
+                    repoURI.getFragment()
+            );
+        }
+        return repoURI;
+    }
+
+    public URI getRepoURI() {
+        return repoURI;
+    }
+
+    public URI getHtmlURI() {
+        return htmlURI;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        RepositoryURI that = (RepositoryURI) o;
+
+        if (!getRepoURI().equals(that.getRepoURI())) {
+            return false;
+        }
+        if (!getHtmlURI().equals(that.getHtmlURI())) {
+            return false;
+        }
+        return getNamespace().equals(that.getNamespace());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getRepoURI(), getHtmlURI(), getNamespace());
+    }
+
+    @Override
+    public String toString() {
+        if (repoURI.getScheme().equals("git")) {
+            return repoURI.getUserInfo() + "@" + repoURI.getHost() + ":" + repoURI.getPath().substring(1);
+        }
+        return repoURI.toString();
+    }
+}
+
+static RepositoryURI getRepositoryURI(Project project) {
+    OutputStream output = new ByteArrayOutputStream()
+    project.exec {
+        executable 'git'
+        args 'ls-remote', '--get-url'
+        standardOutput output
+    }
+    return new RepositoryURI(output.toString().trim())
+}
+
+static String getGitConfigValue(Project project, String key) {
+    OutputStream output = new ByteArrayOutputStream()
+    project.exec {
+        executable 'git'
+        args 'config', '--get', key
+        standardOutput output
+    }
+    return output.toString().trim()
+}
+
+pluginManager.withPlugin('groovy') {
+    task groovydocJar(type: Jar) {
+        dependsOn groovydoc
+        archiveClassifier = 'groovydoc'
+        from groovydoc.destinationDir
+    }
+}
+
+pluginManager.withPlugin('java') {
+    apply plugin: 'maven-publish'
+
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    RepositoryURI gitRepoURL = getRepositoryURI(project)
+    String gitUserName = getGitConfigValue(project, 'user.name')
+    String gitUserEmail = getGitConfigValue(project, 'user.email')
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+
+                afterEvaluate {
+                    // groupId = "${project.group}"
+                    // artifactId = "${project.name}"
+                    // version = "${project.version}"
+
+                    pluginManager.withPlugin('groovy') {
+                        artifact groovydocJar
+                    }
+
+                    pom {
+                        description = "${rootProject.description}"
+                        url = "${gitRepoURL.getHtmlURI()}"
+
+                        scm {
+                            connection = "scm:git:${gitRepoURL.getRepoURI()}"
+                            developerConnection = "scm:git:${gitRepoURL.getRepoURI()}"
+                            url = "${gitRepoURL.getHtmlURI()}"
+                        }
+
+                        licenses {
+                            license {
+                                name = 'MIT License'
+                                url = 'https://opensource.org/licenses/MIT'
+                            }
+                        }
+
+                        developers {
+                            developer {
+                                id = gitRepoURL.getNamespace()
+                                name = gitUserName
+                                email = gitUserEmail
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                // change URLs to point to your repos, e.g. http://my.org/repo
+                def releasesRepoUrl = layout.buildDirectory.dir('repos/releases')
+                def snapshotsRepoUrl = layout.buildDirectory.dir('repos/snapshots')
+                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            }
+        }
+    }
+
+    //signing {
+    //    useGpgCmd()
+    //    sign publishing.publications.matching {true}
+    //}
+
+    javadoc {
+        if (JavaVersion.current().isJava9Compatible()) {
+            options.addBooleanOption('html5', true)
+        }
+    }
+}

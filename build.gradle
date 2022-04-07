@@ -1,22 +1,53 @@
-apply plugin: 'java'
+plugins {
+    id 'java-library'
+    id 'pl.allegro.tech.build.axion-release' version '1.13.6'
+}
 
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'eclipse'
-
-repositories {
-	mavenLocal()
-    jcenter()
-    maven {
-        url 'https://raw.githubusercontent.com/Baqend/Orestes-Bloomfilter/master/maven-repo'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
     }
 }
 
-dependencies {
-	compile 'org.slf4j:slf4j-api:1.7.10'
-	runtime 'org.slf4j:slf4j-log4j12:1.7.10'
-
-	compile 'com.baqend:bloom-filter:1.0.3'
-
-    testCompile 'junit:junit:4.11'
+group 'co.insecurity'
+scmVersion {
+    ignoreUncommittedChanges = false
+    tag {
+        prefix = 'v'
+        versionSeparator = ''
+    }
+    versionIncrementer 'incrementPatch'
+    branchVersionIncrementer = [
+            'feature/.*': 'incrementMinor',
+            'bugfix/.*': 'incrementPatch',
+    ]
+    createReleaseCommit false
+    hooks {
+        pre 'fileUpdate', [
+                files: ['README.md'],
+                pattern: {v, c -> /\b$v\b/},
+                replacement: {v, c -> "$v"},
+        ]
+        pre 'commit'
+    }
 }
+project.version = scmVersion.version
+logger.info("version: ${project.version}")
+
+apply from: "${rootDir}/gradle/maven-publish.gradle"
+
+repositories {
+    mavenCentral()
+    jcenter()
+    // mavenLocal()
+}
+
+dependencies {
+    api 'com.baqend:bloom-filter:1.0.3'
+
+    implementation 'org.slf4j:slf4j-api:1.7.10'
+    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.10'
+
+    testImplementation 'junit:junit:4.11'
+}
+
